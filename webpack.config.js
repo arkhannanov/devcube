@@ -1,6 +1,12 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const fs = require('fs');
+
+const readHtmlFile = (file) => {
+    return fs.readFileSync(path.resolve(__dirname, 'src', 'partials', file), 'utf8');
+
+};
 
 const devServer = (isDev) => !isDev ? {} : {
     devServer: {
@@ -10,45 +16,45 @@ const devServer = (isDev) => !isDev ? {} : {
     }
 };
 
-module.exports = ({develop}) => ({
+module.exports =   ({develop}) => ({
     mode: develop ? 'development' : 'production',
     entry: './src/index.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js',
-        clean: true,
+        path: path.resolve(__dirname, 'dist'),
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: './src/index.html'
+            template: './src/index.html',
+            inject: 'body',
+            templateParameters: {
+                top: readHtmlFile('top/top.html'),
+                middle: readHtmlFile('middle/middle.html'),
+                bottom: readHtmlFile('bottom/bottom.html'),
+            },
         }),
         new MiniCssExtractPlugin({
-            filename: './styles/main.css'
-        })
+            filename: '[name].css',
+        }),
     ],
     module: {
         rules: [
             {
-                test: /\.(?:ico|png|jpg|jpeg|svg)$/i,
-                type: 'asset/inline'
+                test: /\.css$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader'],
             },
             {
-                test: /\.html$/i,
-                loader: 'html-loader'
-            },
-            {
-                test: /\.css$/i,
-                use: [
-                    MiniCssExtractPlugin.loader, 'css-loader'
-                ]
-            },
-            {
-                test: /\.scss$/i,
-                use: [
-                    MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'
-                ]
+                test: /\.html$/,
+                use: ['html-loader'],
             }
         ]
     },
-    ...devServer(develop),
-});
+    devServer: {
+        static: {
+            directory: path.join(__dirname, 'dist'),
+        },
+        compress: true,
+        port: 3000,
+        open: true,
+    }
+})
